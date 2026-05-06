@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RETS 디자인 시스템</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ================================================================
+       CSS CUSTOM PROPERTIES
+    ================================================================ */
+    :root {
+      /* Brand / Point */
+      --brand-500: #F97316;
+      --brand-400: #FB923C;
+      --brand-600: #EA6C0A;
+      --brand-700: #C2560B;
+      --brand-50:  #FFF7ED;
+      --brand-100: #FFEDD5;
+
+      /* Error */
+      --error-500: #8c3131;
+      --error-50:  #FEF2F2;
+      --error-200: #FECACA;
+      --error-700: #6b2424;
+
+      /* Warning */
+      --warning-500: #D97706;
+      --warning-50:  #FFFBEB;
+      --warning-200: #FDE68A;
+      --warning-700: #92400E;
+
+      /* Success */
+      --success-500: #1CB357;
+      --success-50:  #F0FDF4;
+      --success-200: #BBF7D0;
+      --success-700: #15803D;
+
+      /* Info */
+      --info-500: #3375E8;
+      --info-50:  #EFF6FF;
+      --info-200: #BFDBFE;
+      --info-700: #1D4ED8;
+
+      /* Neutrals (light) */
+      --bg:          #FFFFFF;
+      --surface:     #F9FAFB;
+      --surface-2:   #F3F4F6;
+      --border:      #E5E7EB;
+      --border-md:   #D1D5DB;
+      --text-pri:    #111827;
+      --text-sec:    #6B7280;
+      --text-dis:    #9CA3AF;
+      --text-ph:     #9CA3AF;
+
+      --header-bg:   rgba(240, 242, 245, 0.72);
+
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --t: 0.15s ease;
+    }
+
+    [data-theme="dark"] {
+      --brand-500: #F97316;
+      --brand-400: #FB923C;
+      --brand-600: #EA6C0A;
+      --brand-700: #FED7AA;
+      --brand-50:  #431407;
+      --brand-100: #7C2D12;
+
+      --error-500: #F87171;
+      --error-50:  #450A0A;
+      --error-200: #991B1B;
+      --error-700: #FCA5A5;
+
+      --warning-500: #FBBF24;
+      --warning-50:  #451A03;
+      --warning-200: #92400E;
+      --warning-700: #FDE68A;
+
+      --success-500: #3DD171;
+      --success-50:  #052E16;
+      --success-200: #166534;
+      --success-700: #86EFAC;
+
+      --info-500: #5299F0;
+      --info-50:  #172554;
+      --info-200: #1E40AF;
+      --info-700: #93C5FD;
+
+      --bg:         #101111;
+      --surface:    #1c1d1d;
+      --surface-2:  #262727;
+      --border:     #303232;
+      --border-md:  #404242;
+      --text-pri:   #F8FAFC;
+      --text-sec:   #94A3B8;
+      --text-dis:   #475569;
+      --text-ph:    #64748B;
+
+      --header-bg:  rgba(14, 35, 35, 0.80);
+    }
+
+    /* ================================================================
+       BASE
+    ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      letter-spacing: -0.04em;
+      background: var(--bg);
+      color: var(--text-pri);
+      transition: background var(--t), color var(--t);
+    }
+
+    /* ================================================================
+       INLINE CODE
+    ================================================================ */
+    code {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 0.75em;           /* 본문 14px 기준 약 10.5px */
+      color: #374151;              /* Tailwind gray-700 — 진한 회색 */
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0;           /* 본문 자간(-0.04em) 리셋 */
+      word-break: break-all;
+    }
+    [data-theme="dark"] code {
+      color: #9CA3AF;              /* 다크 모드 — 밝은 회색으로 가독성 확보 */
+    }
+
+    /* ================================================================
+       LAYOUT
+    ================================================================ */
+    .ds-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--header-bg);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+              backdrop-filter: blur(14px) saturate(160%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 30px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+    }
+    .ds-header-left {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ds-header-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    /* 로고 라이트/다크 전환 */
+    .logo-dark { display: none; }
+    [data-theme="dark"] .logo-light { display: none; }
+    [data-theme="dark"] .logo-dark  { display: block; }
+
+    .ds-logo-badge {
+      background: #C2560B;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.05em;
+    }
+    .ds-header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-pri);
+    }
+    .ds-header-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .ds-main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 30px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+    }
+
+    /* ================================================================
+       SECTION
+    ================================================================ */
+    .ds-section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-pri);
+      margin-bottom: 4px;
+    }
+    .ds-section-sub {
+      font-size: 12px;
+      color: var(--text-sec);
+      margin-bottom: 24px;
+    }
+    .ds-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .ds-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+    .ds-group-label:first-child { margin-top: 0; }
+
+    .ds-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .ds-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ================================================================
+       COLORS
+    ================================================================ */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .color-card {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .color-swatch {
+      height: 56px;
+    }
+    .color-meta {
+      padding: 8px 10px;
+      background: var(--surface);
+    }
+    .color-meta .name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-pri);
+    }
+    .color-meta .hex {
+      font-size: 11px;
+      color: var(--text-pri);
+      font-family: Consolas, 'Courier New', monospace;
+      cursor: pointer;
+      letter-spacing: 0;
+      transition: color var(--t);
+    }
+    .color-meta .hex:hover { color: var(--brand-500); }
+
+    .semantic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    .semantic-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .semantic-card-header {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .semantic-card-body {
+      padding: 10px 14px;
+      background: var(--surface);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .sem-swatch-group { text-align: center; }
+    .sem-swatch {
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+    .sem-swatch-label {
+      font-size: 10px;
+      color: var(--text-sec);
+    }
+    .sem-swatch-hex {
+      font-size: 10px;
+      font-family: Consolas, 'Courier New', monospace;
+      color: var(--text-pri);
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0;
+      transition: color var(--t);
+    }
+    .sem-swatch-hex:hover { color: var(--brand-500); }
+
+    /* ================================================================
+       TYPOGRAPHY
+    ================================================================ */
+    .typo-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .typo-item {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .typo-item:last-child { border-bottom: none; }
+    .typo-meta {
+      width: 120px;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--text-sec);
+    }
+    .typo-meta .size { font-weight: 700; color: var(--text-pri); }
+    .typo-meta .role { color: var(--text-sec); }
+    .typo-meta .spacing { font-size: 10px; color: var(--text-dis); }
+
+    /* ================================================================
+       BUTTONS
+    ================================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background var(--t), color var(--t), border-color var(--t);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--brand-500);
+      outline-offset: 2px;
+    }
+
+    .btn-primary {
+      background: var(--brand-500);
+      color: #fff;
+      border-color: var(--brand-500);
+    }
+    .btn-primary:hover { background: var(--brand-600); border-color: var(--brand-600); }
+    .btn-primary:active { background: var(--brand-700); }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-pri);
+      border-color: var(--border-md);
+    }
+    .btn-secondary:hover { background: var(--surface-2); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-pri);
+      border-color: transparent;
+    }
+    .btn-ghost:hover { background: var(--surface-2); }
+
+    .btn-danger {
+      background: var(--error-50);
+      color: var(--error-500);
+      border-color: var(--error-200);
+    }
+    .btn-danger:hover { background: var(--error-200); }
+
+    .btn-brand-outline {
+      background: transparent;
+      color: var(--brand-500);
+      border-color: var(--brand-500);
+    }
+    .btn-brand-outline:hover { background: var(--brand-50); }
+
+    .btn[disabled], .btn-disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .btn-lg {
+      padding: 10px 20px;
+      font-size: 15px;
+    }
+
+    /* Icon button */
+    .btn-icon {
+      padding: 7px;
+      background: transparent;
+      border-color: var(--border-md);
+      color: var(--text-sec);
+    }
+    .btn-icon:hover { background: var(--surface-2); color: var(--text-pri); }
+
+    /* ================================================================
+       THEME TOGGLE BUTTON
+    ================================================================ */
+    #theme-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-md);
+      background: var(--surface);
+      color: var(--text-sec);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background var(--t);
+    }
+    #theme-toggle:hover { background: var(--surface-2); }
+
+    /* ================================================================
+       BADGES & TAGS
+    ================================================================ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-brand  { background: var(--brand-50);   color: var(--brand-600); border: 1px solid var(--brand-100); }
+    .badge-error  { background: var(--error-50);   color: var(--error-700); border: 1px solid var(--error-200); }
+    .badge-warning{ background: var(--warning-50); color: var(--warning-700); border: 1px solid var(--warning-200); }
+    .badge-success{ background: var(--success-50); color: var(--success-700); border: 1px solid var(--success-200); }
+    .badge-info   { background: var(--info-50);    color: var(--info-700); border: 1px solid var(--info-200); }
+    .badge-neutral{ background: var(--surface-2);  color: var(--text-sec); border: 1px solid var(--border); }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      background: var(--surface-2);
+      color: var(--text-pri);
+      border: 1px solid var(--border);
+    }
+    .tag-brand { background: var(--brand-50); color: var(--brand-600); border-color: var(--brand-100); }
+    .tag-close {
+      cursor: pointer;
+      color: var(--text-sec);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* ================================================================
+       INPUTS
+    ================================================================ */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-pri);
+    }
+    .form-label .required {
+      color: var(--error-500);
+      margin-left: 2px;
+    }
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-sec);
+    }
+    .form-error-msg {
+      font-size: 11px;
+      color: var(--error-500);
+    }
+    .form-warning-msg {
+      font-size: 11px;
+      color: #451A03;
+    }
+    [data-theme="dark"] .form-warning-msg {
+      color: #FDE68A;
+    }
+    .input.input-warning {
+      border-color: #451A03;
+    }
+    .input.input-warning:focus {
+      border-color: #451A03;
+      box-shadow: 0 0 0 3px rgba(69,26,3,0.15);
+    }
+    [data-theme="dark"] .input.input-warning {
+      border-color: #92400E;
+    }
+    [data-theme="dark"] .input.input-warning:focus {
+      box-shadow: 0 0 0 3px rgba(146,64,14,0.2);
+    }
+
+    .input {
+      width: 100%;
+      padding: 7px 11px;
+      border: 1px solid var(--border-md);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--text-pri);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+    .input::placeholder { color: var(--text-ph); }
+    .input:focus {
+      border-color: var(--brand-500);
+      box-shadow: 0 0 0 3px var(--brand-50);
+    }
+    .input:disabled {
+      background: var(--surface-2);
+      color: var(--text-dis);
+      cursor: not-allowed;
+      border-color: var(--border);
+    }
+    .input.input-error {
+      border-color: var(--error-500);
+    }
+    .input.input-error:focus {
+      box-shadow: 0 0 0 3px var(--error-50);
+    }
+    .input-readonly {
+      background: var(--surface);
+      color: var(--text-sec);
+    }
+
+    textarea.input { resize: vertical; min-height: 80px; }
+
+    select.input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+
+    .input-group {
+      display: flex;
+    }
+    .input-group .input {
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+      border-right: none;
+    }
+    .input-group .btn {
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      flex-shrink: 0;
+    }
+
+    /* ================================================================
+       TABLE (DATA GRID)
+    ================================================================ */
+    .data-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      background: var(--surface);
+      padding: 9px 12px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--text-sec);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-pri);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface); }
+
+    /* ================================================================
+       STATE PANELS (Empty / Loading / Error / Forbidden)
+    ================================================================ */
+    .state-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 36px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      text-align: center;
+      min-height: 160px;
+    }
+    .state-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .state-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-pri);
+    }
+    .state-desc {
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-md);
+      border-top-color: var(--brand-500);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    .spinner-lg {
+      width: 32px;
+      height: 32px;
+      border-width: 3px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ================================================================
+       TABS
+    ================================================================ */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sec);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: color var(--t), border-color var(--t);
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .tab:hover { color: var(--text-pri); }
+    .tab.active {
+      color: var(--brand-500);
+      border-bottom-color: var(--brand-500);
+      font-weight: 700;
+    }
+
+    /* ================================================================
+       TOAST
+    ================================================================ */
+    .toast-demo-area {
+      position: relative;
+      min-height: 200px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .toast-demo-label {
+      font-size: 11px;
+      color: var(--text-sec);
+    }
+
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid;
+      font-size: 13px;
+      max-width: 340px;
+      width: 100%;
+    }
+    .toast-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .toast-body { flex: 1; }
+    .toast-title { font-weight: 700; font-size: 13px; margin-bottom: 1px; }
+    .toast-msg { font-size: 12px; color: var(--text-sec); }
+    .toast-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .toast-close {
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: var(--text-sec);
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .toast-close:hover { color: var(--text-pri); }
+
+    .toast-success {
+      background: var(--success-50);
+      border-color: var(--success-200);
+      color: var(--success-700);
+    }
+    .toast-success .toast-msg { color: var(--success-700); opacity: 0.8; }
+    .toast-error {
+      background: var(--error-50);
+      border-color: var(--error-200);
+      color: var(--error-700);
+    }
+    .toast-error .toast-msg { color: var(--error-700); opacity: 0.8; }
+    .toast-warning {
+      background: var(--warning-50);
+      border-color: var(--warning-200);
+      color: var(--warning-700);
+    }
+    .toast-warning .toast-msg { color: var(--warning-700); opacity: 0.8; }
+    .toast-info {
+      background: var(--info-50);
+      border-color: var(--info-200);
+      color: var(--info-700);
+    }
+    .toast-info .toast-msg { color: var(--info-700); opacity: 0.8; }
+
+    /* Live toast container */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #toast-container .toast {
+      pointer-events: all;
+      animation: toastIn 0.2s ease;
+    }
+    #toast-container .toast.removing {
+      animation: toastOut 0.2s ease forwards;
+    }
+    @keyframes toastIn  { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+    @keyframes toastOut { to   { opacity: 0; transform: translateX(16px); } }
+
+    /* ================================================================
+       MODAL
+    ================================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 24px;
+    }
+    .modal {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 15px; font-weight: 700; }
+    .modal-body { padding: 0 20px 16px; font-size: 13px; color: var(--text-sec); line-height: 1.7; }
+    .modal-footer {
+      padding: 12px 20px 18px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .modal-header .btn-icon {
+      border-color: transparent;
+      background: transparent;
+    }
+    .modal-header .btn-icon:hover {
+      background: var(--surface-2);
+    }
+
+    /* ================================================================
+       DRAWER
+    ================================================================ */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 400px;
+      max-width: 90vw;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      z-index: 201;
+    }
+    .drawer-overlay.open .drawer {
+      transform: translateX(0);
+    }
+    .drawer-header {
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .drawer-title { font-size: 15px; font-weight: 700; }
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 16px;
+      font-size: 13px;
+      color: var(--text-sec);
+      line-height: 1.7;
+    }
+    .drawer-footer {
+      padding: 12px 20px 18px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+    .drawer-header .btn-icon {
+      border-color: transparent;
+      background: transparent;
+    }
+    .drawer-header .btn-icon:hover { background: var(--surface-2); }
+    .drawer-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-field:last-child { border-bottom: none; }
+    .drawer-field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dis);
+    }
+    .drawer-field-value {
+      font-size: 13px;
+      color: var(--text-pri);
+    }
+
+    /* ================================================================
+       MODULE HEADER DEMO
+    ================================================================ */
+    .module-header-demo {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .module-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .module-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .module-icon-placeholder {
+      width: 24px;
+      height: 24px;
+      background: var(--brand-500);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .module-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .module-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .module-tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .module-body {
+      display: flex;
+      min-height: 180px;
+      overflow: hidden;
+    }
+    .module-col {
+      padding: 16px 20px;
+      font-size: 12px;
+      color: var(--text-sec);
+      overflow: auto;
+      flex-shrink: 0;
+    }
+    .module-col:first-child  { width: 50%; }
+    .module-col:last-child   { flex: 1; }
+    .module-col-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dis);
+      margin-bottom: 8px;
+    }
+    /* Column resizer */
+    .col-resizer {
+      width: 5px;
+      flex-shrink: 0;
+      background: var(--border);
+      cursor: col-resize;
+      position: relative;
+      transition: background var(--t);
+      user-select: none;
+    }
+    .col-resizer:hover,
+    .col-resizer.dragging {
+      background: var(--brand-500);
+    }
+    .col-resizer::after {
+      content: '';
+      position: absolute;
+      inset: 0 -4px;
+    }
+
+    /* ================================================================
+       AI UX
+    ================================================================ */
+    .ai-suggestion-card {
+      border: 1px solid var(--border-md);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .ai-suggestion-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-sec);
+    }
+    .ai-badge {
+      background: var(--brand-50);
+      color: var(--brand-600);
+      border: 1px solid var(--brand-100);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+    .ai-suggestion-body {
+      padding: 14px;
+      font-size: 13px;
+      color: var(--text-pri);
+      background: var(--bg);
+    }
+    .ai-suggestion-footer {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ================================================================
+       MISC HELPERS
+    ================================================================ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+    .mono { font-family: 'Courier New', monospace; }
+    .text-brand { color: var(--brand-500); }
+    .text-sec { color: var(--text-sec); }
+
+    /* neutral row display */
+    .neutral-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .neutral-chip {
+      flex: 1;
+      padding: 0;
+    }
+    .neutral-chip .swatch { height: 44px; }
+    .neutral-chip .label {
+      padding: 4px 0;
+      text-align: center;
+      font-size: 10px;
+      font-family: monospace;
+      color: var(--text-sec);
+      background: var(--surface);
+    }
+
+    @media (max-width: 768px) {
+      .module-body { grid-template-columns: 1fr; }
+      .module-col:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      .semantic-grid { grid-template-columns: 1fr; }
+      .color-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ================================================================
+     STICKY HEADER
+================================================================ -->
+<header class="ds-header">
+  <div class="ds-header-left">
+    <span class="ds-logo-badge">RETS</span>
+    <h1>디자인 시스템 <span style="color:var(--text-sec);font-weight:400;">— 개발팀 배포용</span></h1>
+  </div>
+  <div class="ds-header-center">
+    <img src="logo_light.png" class="logo-light" alt="솔루션링크 로고" style="height:20px;width:auto;object-fit:contain;" />
+    <img src="logo_dark.png"  class="logo-dark"  alt="솔루션링크 로고" style="height:20px;width:auto;object-fit:contain;" />
+  </div>
+  <div class="ds-header-right">
+    <span style="font-size:11px;color:var(--text-sec);">RFP-UI-REQ-01 ~ 05 기준</span>
+    <button id="theme-toggle" title="테마 전환" aria-label="테마 전환">☀</button>
+  </div>
+</header>
+
+<!-- ================================================================
+     MAIN CONTENT
+================================================================ -->
+<main class="ds-main">
+
+  <!-- ──────────────── 1. COLOR SYSTEM ──────────────── -->
+  <section>
+    <div class="ds-section-title">01 색상 시스템 (Color System)</div>
+    <div class="ds-section-sub">포인트 컬러 + 의미색(Semantic) + 무채색(Neutral) — 그라데이션 사용 금지</div>
+    <hr class="ds-divider" />
+
+    <div class="ds-group-label">Brand / Point Color</div>
+    <div class="color-grid" style="margin-bottom:24px;">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#F97316;"></div>
+        <div class="color-meta"><div class="name">Primary (500)</div><div class="hex">#F97316</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FB923C;"></div>
+        <div class="color-meta"><div class="name">Hover / Badge (400)</div><div class="hex">#FB923C</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#EA6C0A;"></div>
+        <div class="color-meta"><div class="name">Active (600)</div><div class="hex">#EA6C0A</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#C2560B;"></div>
+        <div class="color-meta"><div class="name">Pressed (700)</div><div class="hex">#C2560B</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FFEDD5; border-bottom:1px solid #E5E7EB;"></div>
+        <div class="color-meta"><div class="name">Tint BG (100)</div><div class="hex">#FFEDD5</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FFF7ED; border-bottom:1px solid #E5E7EB;"></div>
+        <div class="color-meta"><div class="name">Light BG (50)</div><div class="hex">#FFF7ED</div></div>
+      </div>
+    </div>
+
+    <div class="ds-group-label">의미색 체계 (Semantic Colors) — 라이트 모드</div>
+    <div class="semantic-grid" style="margin-bottom:24px;">
+
+      <div class="semantic-card">
+        <div class="semantic-card-header" style="background:#FEF2F2;color:#6b2424;">
+          <span>⛔</span> Error (오류)
+        </div>
+        <div class="semantic-card-body">
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#8c3131;"></div>
+            <div class="sem-swatch-label">Main</div>
+            <div class="sem-swatch-hex">#8c3131</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#FEF2F2;"></div>
+            <div class="sem-swatch-label">Background</div>
+            <div class="sem-swatch-hex">#FEF2F2</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#FECACA;"></div>
+            <div class="sem-swatch-label">Border</div>
+            <div class="sem-swatch-hex">#FECACA</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-card-header" style="background:#FFFBEB;color:#92400E;">
+          <span>⚠️</span> Warning (경고)
+        </div>
+        <div class="semantic-card-body">
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#D97706;"></div>
+            <div class="sem-swatch-label">Main</div>
+            <div class="sem-swatch-hex">#D97706</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#FFFBEB;"></div>
+            <div class="sem-swatch-label">Background</div>
+            <div class="sem-swatch-hex">#FFFBEB</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#FDE68A;"></div>
+            <div class="sem-swatch-label">Border</div>
+            <div class="sem-swatch-hex">#FDE68A</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-card-header" style="background:#F0FDF4;color:#15803D;">
+          <span>✅</span> Success (성공)
+        </div>
+        <div class="semantic-card-body">
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#1CB357;"></div>
+            <div class="sem-swatch-label">Main</div>
+            <div class="sem-swatch-hex">#1CB357</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#F0FDF4;"></div>
+            <div class="sem-swatch-label">Background</div>
+            <div class="sem-swatch-hex">#F0FDF4</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#BBF7D0;"></div>
+            <div class="sem-swatch-label">Border</div>
+            <div class="sem-swatch-hex">#BBF7D0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-card-header" style="background:#EFF6FF;color:#1D4ED8;">
+          <span>ℹ️</span> Info (정보)
+        </div>
+        <div class="semantic-card-body">
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#3375E8;"></div>
+            <div class="sem-swatch-label">Main</div>
+            <div class="sem-swatch-hex">#3375E8</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#EFF6FF;"></div>
+            <div class="sem-swatch-label">Background</div>
+            <div class="sem-swatch-hex">#EFF6FF</div>
+          </div>
+          <div class="sem-swatch-group">
+            <div class="sem-swatch" style="background:#BFDBFE;"></div>
+            <div class="sem-swatch-label">Border</div>
+            <div class="sem-swatch-hex">#BFDBFE</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ds-group-label">의미색 체계 (Semantic Colors) — 다크 모드</div>
+    <div style="background:#0F172A;border-radius:var(--radius-lg);padding:16px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div style="text-align:center;">
+          <div style="height:36px;background:#F87171;border-radius:4px;margin-bottom:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">Error Main</div>
+          <div style="font-size:10px;font-family:Consolas,'Courier New',monospace;color:#F8FAFC;cursor:pointer;" onclick="copyHex(this,'#F87171')">#F87171</div>
+          <div style="height:24px;background:#450A0A;border-radius:4px;margin-top:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">BG #450A0A</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="height:36px;background:#FBBF24;border-radius:4px;margin-bottom:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">Warning Main</div>
+          <div style="font-size:10px;font-family:Consolas,'Courier New',monospace;color:#F8FAFC;cursor:pointer;" onclick="copyHex(this,'#FBBF24')">#FBBF24</div>
+          <div style="height:24px;background:#451A03;border-radius:4px;margin-top:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">BG #451A03</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="height:36px;background:#3DD171;border-radius:4px;margin-bottom:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">Success Main</div>
+          <div style="font-size:10px;font-family:Consolas,'Courier New',monospace;color:#F8FAFC;cursor:pointer;" onclick="copyHex(this,'#3DD171')">#3DD171</div>
+          <div style="height:24px;background:#052E16;border-radius:4px;margin-top:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">BG #052E16</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="height:36px;background:#5299F0;border-radius:4px;margin-bottom:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">Info Main</div>
+          <div style="font-size:10px;font-family:Consolas,'Courier New',monospace;color:#F8FAFC;cursor:pointer;" onclick="copyHex(this,'#5299F0')">#5299F0</div>
+          <div style="height:24px;background:#172554;border-radius:4px;margin-top:4px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">BG #172554</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-group-label">중립색 (Neutrals)</div>
+    <div class="neutral-row">
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#111827;"></div>
+        <div class="label">text-pri<br>#111827</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#6B7280;"></div>
+        <div class="label">text-sec<br>#6B7280</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#9CA3AF;"></div>
+        <div class="label">text-dis<br>#9CA3AF</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#D1D5DB;"></div>
+        <div class="label">border-md<br>#D1D5DB</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#E5E7EB;"></div>
+        <div class="label">border<br>#E5E7EB</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#F3F4F6;border-top:1px solid #E5E7EB;"></div>
+        <div class="label">surface-2<br>#F3F4F6</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#F9FAFB;border-top:1px solid #E5E7EB;"></div>
+        <div class="label">surface<br>#F9FAFB</div>
+      </div>
+      <div class="neutral-chip">
+        <div class="swatch" style="background:#FFFFFF;border-top:1px solid #E5E7EB;"></div>
+        <div class="label">bg<br>#FFFFFF</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 2. TYPOGRAPHY ──────────────── -->
+  <section>
+    <div class="ds-section-title">02 타이포그래피 (Typography)</div>
+    <div class="ds-section-sub">Noto Sans KR 단독 사용 — 최대 20px 제한 — 자간(letter-spacing) -3~-5% (-0.04em 기본 적용)</div>
+    <hr class="ds-divider" />
+
+    <div class="typo-row">
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">20px</span><br><span class="role">Title</span><br><span class="spacing">ls -0.04em</span></div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.04em;">요구사항 분석 도구 — RETS</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">16px</span><br><span class="role">Subtitle / Section</span><br><span class="spacing">ls -0.04em</span></div>
+        <div style="font-size:16px;font-weight:700;letter-spacing:-0.04em;">2.1.2.3. UI 및 디자인 요구사항</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">14px</span><br><span class="role">Body (기본)</span><br><span class="spacing">ls -0.04em</span></div>
+        <div style="font-size:14px;letter-spacing:-0.04em;">요구사항 문서의 모호성, 누락, 중복, 비일관성을 조기에 식별하여 요구사항 품질 검토에 기반한 정제 업무를 지원합니다.</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">14px Bold</span><br><span class="role">Label / 강조</span><br><span class="spacing">ls -0.04em</span></div>
+        <div style="font-size:14px;font-weight:700;letter-spacing:-0.04em;">포인트 컬러 #F97316 — 강조에만 사용</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">13px</span><br><span class="role">UI 레이블 / 버튼</span><br><span class="spacing">ls -0.04em</span></div>
+        <div style="font-size:13px;letter-spacing:-0.04em;">불러오기  내보내기  저장  취소  수락  거부</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">12px</span><br><span class="role">캡션 / 힌트</span><br><span class="spacing">ls -0.03em</span></div>
+        <div style="font-size:12px;letter-spacing:-0.03em;color:var(--text-sec);">요구사항 ID는 영문·숫자·하이픈(-) 조합만 허용됩니다. 예: REQ-001</div>
+      </div>
+      <div class="typo-item">
+        <div class="typo-meta"><span class="size">11px</span><br><span class="role">메타 / 뱃지</span><br><span class="spacing">ls -0.03em</span></div>
+        <div style="font-size:11px;letter-spacing:-0.03em;color:var(--text-sec);">마지막 수정: 2026-05-04 · 작성자: Anthony · 버전 1.0</div>
+      </div>
+    </div>
+
+    <div class="ds-group-label">인라인 코드 (Inline Code)</div>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:680px;">
+      <div style="font-size:12px;color:var(--text-sec);margin-bottom:4px;">
+        백틱(`) 기반의 인라인 코드 표현 시 <code>&lt;code&gt;</code> 태그를 사용한다.
+        Consolas 폰트 / 본문 대비 0.75em / 진한 회색 / 자간 0 리셋.
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);">
+        <div style="width:120px;flex-shrink:0;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-sec);">Consolas · 0.75em</div>
+          <div style="font-size:10px;color:var(--text-dis);">letter-spacing: 0</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;font-size:14px;letter-spacing:-0.04em;">
+          <span>요구사항 ID는 <code>DEV_FR_001</code> 형식을 따른다.</span>
+          <span>상태값은 <code>InProgress</code> · <code>Done</code> · <code>Blocked</code> 중 하나다.</span>
+          <span>패턴: <code>^DEV_(FR|NFR)_\d{3}(_\d{2}){0,4}$</code></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 3. BUTTONS ──────────────── -->
+  <section>
+    <div class="ds-section-title">03 버튼 (Buttons)</div>
+    <div class="ds-section-sub">주요 액션은 버튼으로 제공 — 보조 탐색에만 링크 허용</div>
+    <hr class="ds-divider" />
+
+    <div class="ds-group-label">Variants</div>
+    <div class="ds-row" style="margin-bottom:20px;">
+      <button class="btn btn-primary">Primary 저장</button>
+      <button class="btn btn-secondary">Secondary 취소</button>
+      <button class="btn btn-brand-outline">Outline 내보내기</button>
+      <button class="btn btn-ghost">Ghost 더보기</button>
+      <button class="btn btn-danger">Danger 삭제</button>
+      <button class="btn btn-primary btn-disabled" disabled>Disabled</button>
+    </div>
+
+    <div class="ds-group-label">Sizes</div>
+    <div class="ds-row" style="align-items:center;margin-bottom:20px;">
+      <button class="btn btn-primary btn-lg">Large</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-sm">Small</button>
+    </div>
+
+    <div class="ds-group-label">Icon Buttons</div>
+    <div class="ds-row">
+      <button class="btn btn-icon" title="테마 전환">◐</button>
+      <button class="btn btn-icon" title="불러오기">↑</button>
+      <button class="btn btn-icon" title="내보내기">↓</button>
+      <button class="btn btn-secondary" style="gap:6px;">
+        <span>↑</span> 불러오기
+      </button>
+      <button class="btn btn-secondary" style="gap:6px;">
+        <span>↓</span> 내보내기
+      </button>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:12px;">
+        <div class="spinner"></div>
+        <span style="font-size:13px;color:var(--text-sec);">처리 중...</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 4. BADGES & TAGS ──────────────── -->
+  <section>
+    <div class="ds-section-title">04 뱃지 & 태그 (Badges & Tags)</div>
+    <div class="ds-section-sub">줄바꿈 없이 한 줄로 표시 — overflow: hidden 처리 필수</div>
+    <hr class="ds-divider" />
+
+    <div class="ds-group-label">Status Badges (상태 뱃지)</div>
+    <div class="ds-row" style="margin-bottom:20px;">
+      <span class="badge badge-success">● 완료</span>
+      <span class="badge badge-brand">● 진행중</span>
+      <span class="badge badge-warning">● 검토 필요</span>
+      <span class="badge badge-error">● 오류</span>
+      <span class="badge badge-info">● 정보</span>
+      <span class="badge badge-neutral">● 미시작</span>
+    </div>
+
+    <div class="ds-group-label">Tags (태그)</div>
+    <div class="ds-row">
+      <span class="tag">기능 요구사항</span>
+      <span class="tag tag-brand">MODULE-01</span>
+      <span class="tag">High Priority</span>
+      <span class="tag">
+        UI/UX
+        <span class="tag-close">×</span>
+      </span>
+      <span class="tag">
+        검토 대기
+        <span class="tag-close">×</span>
+      </span>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 5. INPUTS ──────────────── -->
+  <section>
+    <div class="ds-section-title">05 입력 폼 (Form Inputs)</div>
+    <div class="ds-section-sub">모든 입력에 Label + Placeholder + 검증 메시지 필수</div>
+    <hr class="ds-divider" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="form-group">
+        <label class="form-label">요구사항 제목 <span class="required">*</span></label>
+        <input class="input" type="text" placeholder="예: REQ-001 로그인 기능 구현" />
+        <span class="form-hint">영문·숫자·하이픈(-) 사용 권장</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">요구사항 ID <span class="required">*</span></label>
+        <input class="input input-error" type="text" value="REQ 001" />
+        <span class="form-error-msg">⚠ 공백을 포함할 수 없습니다. 하이픈(-)을 사용하세요.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">담당 모듈</label>
+        <select class="input">
+          <option value="">모듈을 선택하세요</option>
+          <option>MODULE-01 RFP 요구사항 상세화</option>
+          <option>MODULE-02 이해관계자 매니징</option>
+          <option>MODULE-03 규모 산정</option>
+          <option>MODULE-04 도메인 모델링</option>
+          <option>MODULE-05 테스트케이스 생성</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">우선순위</label>
+        <input class="input" type="text" value="읽기 전용 값" readonly style="background:var(--surface);color:var(--text-sec);" />
+        <span class="form-hint">시스템에서 자동 산출됩니다.</span>
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">요구사항 설명</label>
+        <textarea class="input" placeholder="요구사항의 상세 내용을 입력하세요. 모호한 표현은 구체적으로 기술해주세요."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">비활성 필드</label>
+        <input class="input" type="text" value="수정 불가 상태" disabled />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">경고 상태 필드</label>
+        <input class="input input-warning" type="text" value="중복 가능성 있는 요구사항" />
+        <span class="form-warning-msg">⚠ 유사한 요구사항(REQ-008)이 존재합니다. 내용을 확인하세요.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">검색</label>
+        <div class="input-group">
+          <input class="input" type="text" placeholder="요구사항 검색..." />
+          <button class="btn btn-primary">검색</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 6. DATA STATES ──────────────── -->
+  <section>
+    <div class="ds-section-title">06 데이터 상태 (Data States)</div>
+    <div class="ds-section-sub">Empty / Loading / Error / Forbidden — 모든 그리드·목록에 필수 구현</div>
+    <hr class="ds-divider" />
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+      <div class="state-panel">
+        <div class="state-icon">📭</div>
+        <div class="state-title">데이터 없음</div>
+        <div class="state-desc">요구사항이 아직 등록되지 않았습니다.<br>새 항목을 추가해 주세요.</div>
+        <button class="btn btn-primary btn-sm" style="margin-top:4px;">+ 요구사항 추가</button>
+      </div>
+
+      <div class="state-panel">
+        <div class="spinner spinner-lg"></div>
+        <div class="state-title">로딩 중</div>
+        <div class="state-desc">데이터를 불러오는 중입니다.</div>
+      </div>
+
+      <div class="state-panel">
+        <div class="state-icon" style="color:var(--error-500);">⛔</div>
+        <div class="state-title">불러오기 실패</div>
+        <div class="state-desc">데이터 로드 중 오류가 발생했습니다.</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:4px;">다시 시도</button>
+      </div>
+
+      <div class="state-panel">
+        <div class="state-icon">🔒</div>
+        <div class="state-title">접근 권한 없음</div>
+        <div class="state-desc">이 데이터를 볼 수 있는 권한이 없습니다.</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 7. TABS ──────────────── -->
+  <section>
+    <div class="ds-section-title">07 탭 (Working Tabs)</div>
+    <div class="ds-section-sub">Header와 Body 사이에 배치 — 필요 시에만 사용</div>
+    <hr class="ds-divider" />
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active">요구사항 목록</button>
+        <button class="tab">상세화 작업</button>
+        <button class="tab">품질 평가</button>
+        <button class="tab">추적 매트릭스</button>
+      </div>
+      <div style="padding:20px;font-size:13px;color:var(--text-sec);">
+        선택된 탭의 콘텐츠 영역 — Body (2-column 구성 가능)
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 8. TOAST ──────────────── -->
+  <section>
+    <div class="ds-section-title">08 Toast 알림</div>
+    <div class="ds-section-sub">우측 하단 고정 출력 — 기본 alert() 사용 금지</div>
+    <hr class="ds-divider" />
+
+    <div class="ds-row" style="margin-bottom:16px;">
+      <button class="btn btn-secondary btn-sm" onclick="showToast('success','저장 완료','요구사항이 성공적으로 저장되었습니다.')">✅ Success</button>
+      <button class="btn btn-secondary btn-sm" onclick="showToast('error','저장 실패','서버 오류가 발생했습니다. 다시 시도해주세요.', true)">⛔ Error (버튼 포함)</button>
+      <button class="btn btn-secondary btn-sm" onclick="showToast('warning','검토 필요','3개의 요구사항에 모호한 표현이 감지되었습니다.')">⚠️ Warning</button>
+      <button class="btn btn-secondary btn-sm" onclick="showToast('info','LLM 처리 중','AI가 요구사항을 분석하고 있습니다.')">ℹ️ Info</button>
+    </div>
+
+    <!-- Static Toast examples -->
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:380px;">
+      <div class="toast toast-success">
+        <span class="toast-icon">✅</span>
+        <div class="toast-body">
+          <div class="toast-title">저장 완료</div>
+          <div class="toast-msg">요구사항이 성공적으로 저장되었습니다.</div>
+        </div>
+        <button class="toast-close">×</button>
+      </div>
+
+      <div class="toast toast-error">
+        <span class="toast-icon">⛔</span>
+        <div class="toast-body">
+          <div class="toast-title">LLM 처리 실패</div>
+          <div class="toast-msg">AI 서버에 연결할 수 없습니다.</div>
+          <div class="toast-actions">
+            <button class="btn btn-danger btn-sm">다시 시도</button>
+            <button class="btn btn-ghost btn-sm">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast toast-warning">
+        <span class="toast-icon">⚠️</span>
+        <div class="toast-body">
+          <div class="toast-title">미완성 항목 존재</div>
+          <div class="toast-msg">2개 요구사항의 수용 기준이 비어 있습니다.</div>
+        </div>
+        <button class="toast-close">×</button>
+      </div>
+
+      <div class="toast toast-info">
+        <span class="toast-icon">ℹ️</span>
+        <div class="toast-body">
+          <div class="toast-title">벤치마크 파일 로드 완료</div>
+          <div class="toast-msg">총 24개의 요구사항이 불러와졌습니다.</div>
+        </div>
+        <button class="toast-close">×</button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 9. MODAL & DRAWER ──────────────── -->
+  <section>
+    <div class="ds-section-title">09 모달 & 드로어 (Modal & Drawer)</div>
+    <div class="ds-section-sub">팝업 사용 금지 — 확인/경고성 인터랙션은 모달, 상세 보기·편집은 드로어로 구현</div>
+    <hr class="ds-divider" />
+
+    <div class="ds-group-label">사용 기준</div>
+    <div class="card" style="font-size:13px;margin-bottom:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;">
+        <div style="padding:14px;border-right:1px solid var(--border);">
+          <div style="font-weight:700;margin-bottom:8px;">모달 (Modal)</div>
+          <div style="color:var(--text-sec);font-size:12px;line-height:1.8;">
+            확인/취소가 필요한 액션<br>
+            되돌릴 수 없는 작업 경고<br>
+            간단한 설정 변경<br>
+            짧은 폼 입력 (1~3개 필드)
+          </div>
+        </div>
+        <div style="padding:14px;">
+          <div style="font-weight:700;margin-bottom:8px;">드로어 (Drawer)</div>
+          <div style="color:var(--text-sec);font-size:12px;line-height:1.8;">
+            요구사항·항목 상세 보기<br>
+            컨텍스트를 유지한 채 편집<br>
+            긴 폼 / 여러 필드 입력<br>
+            메타데이터·필터 패널
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-sec);">
+        공통 규칙: 영역 간 구분선(border) 없음 · 닫기(×) 버튼 테두리 없음 · 오버레이 클릭으로 닫기 지원
+      </div>
+    </div>
+
+    <div class="ds-group-label">데모</div>
+    <div class="ds-row">
+      <button class="btn btn-secondary" onclick="document.getElementById('demo-modal').style.display='flex'">
+        모달 열기 — 삭제 확인
+      </button>
+      <button class="btn btn-secondary" onclick="openDrawer()">
+        드로어 열기 — 요구사항 상세
+      </button>
+    </div>
+
+    <!-- Modal -->
+    <div id="demo-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">요구사항 삭제 확인</span>
+          <button class="btn btn-icon" onclick="document.getElementById('demo-modal').style.display='none'">×</button>
+        </div>
+        <div class="modal-body">
+          선택한 요구사항 <strong>REQ-012 — 다국어 지원</strong>을 삭제하시겠습니까?<br><br>
+          이 작업은 되돌릴 수 없으며, 연결된 테스트케이스 3건도 함께 영향을 받습니다.
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('demo-modal').style.display='none'">취소</button>
+          <button class="btn btn-danger" onclick="document.getElementById('demo-modal').style.display='none'">삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer -->
+    <div id="demo-drawer" class="drawer-overlay" onclick="if(event.target===this)closeDrawer()">
+      <div class="drawer">
+        <div class="drawer-header">
+          <span class="drawer-title">요구사항 상세</span>
+          <button class="btn btn-icon" onclick="closeDrawer()">×</button>
+        </div>
+        <div class="drawer-body">
+          <div class="drawer-field">
+            <div class="drawer-field-label">요구사항 ID</div>
+            <div class="drawer-field-value"><code>REQ-002</code></div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">제목</div>
+            <div class="drawer-field-value">다국어 지원 (한국어 / 영어)</div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">상태</div>
+            <div class="drawer-field-value"><span class="badge badge-brand">● 진행중</span></div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">담당 모듈</div>
+            <div class="drawer-field-value"><span class="tag tag-brand">MODULE-01</span></div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">설명</div>
+            <div class="drawer-field-value">시스템은 한국어와 영어의 다국어를 지원하여야 하며, 언어 전환 시 모든 UI 레이블, 메시지, 플레이스홀더가 즉시 변경되어야 한다. 선택된 언어 설정은 로컬에 저장하여 재접속 시 유지한다.</div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">수용 기준 (Acceptance Criteria)</div>
+            <div class="drawer-field-value" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
+              <div style="display:flex;align-items:flex-start;gap:6px;"><span style="color:var(--success-500);flex-shrink:0;">✓</span> 언어 전환 버튼이 Header 우측에 표시된다</div>
+              <div style="display:flex;align-items:flex-start;gap:6px;"><span style="color:var(--success-500);flex-shrink:0;">✓</span> 전환 시 페이지 새로고침 없이 즉시 반영된다</div>
+              <div style="display:flex;align-items:flex-start;gap:6px;"><span style="color:var(--warning-500);flex-shrink:0;">△</span> 언어 설정이 localStorage에 저장된다</div>
+            </div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">연결된 테스트케이스</div>
+            <div class="drawer-field-value" style="margin-top:4px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;">
+                <span>TC-008 — 언어 전환 정상 동작</span><span class="badge badge-success">통과</span>
+              </div>
+              <div style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;">
+                <span>TC-009 — 설정 유지 확인</span><span class="badge badge-neutral">미실행</span>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-field">
+            <div class="drawer-field-label">마지막 수정</div>
+            <div class="drawer-field-value" style="font-size:12px;color:var(--text-sec);">2026-05-04 · Anthony</div>
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <button class="btn btn-ghost btn-sm" onclick="closeDrawer()">닫기</button>
+          <button class="btn btn-secondary btn-sm">수정</button>
+          <button class="btn btn-primary btn-sm">수락 (Accept)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 10. AI UX ──────────────── -->
+  <section>
+    <div class="ds-section-title">10 AI / LLM UX 패턴</div>
+    <div class="ds-section-sub">AI 결과는 자동 반영 금지 — 사용자가 수락/거부 후 반영</div>
+    <hr class="ds-divider" />
+
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:620px;">
+
+      <!-- AI Loading -->
+      <div class="ai-suggestion-card">
+        <div class="ai-suggestion-header">
+          <span class="ai-badge">AI</span>
+          LLM이 요구사항을 분석 중입니다...
+          <div class="spinner" style="margin-left:auto;"></div>
+        </div>
+        <div class="ai-suggestion-body" style="color:var(--text-dis);font-style:italic;">결과를 생성하는 중입니다. 잠시 기다려주세요.</div>
+      </div>
+
+      <!-- AI Result -->
+      <div class="ai-suggestion-card">
+        <div class="ai-suggestion-header">
+          <span class="ai-badge">AI</span>
+          상세화 제안 — REQ-005
+          <span class="badge badge-warning" style="margin-left:auto;">검토 필요</span>
+        </div>
+        <div class="ai-suggestion-body">
+          <div style="font-size:12px;color:var(--text-sec);margin-bottom:8px;">원문: "사용자 로그인 기능을 제공한다."</div>
+          <div style="font-size:13px;">시스템은 이메일과 비밀번호를 통한 사용자 인증 기능을 제공하여야 하며, 로그인 실패 시 5회 이상 반복 실패에 대한 계정 잠금 처리 및 사용자 안내 메시지를 표시하여야 한다.</div>
+        </div>
+        <div class="ai-suggestion-footer">
+          <button class="btn btn-primary btn-sm">수락 (Accept)</button>
+          <button class="btn btn-secondary btn-sm">수정 후 수락</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--error-500);">거부 (Reject)</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ──────────────── 11. MODULE HEADER DEMO ──────────────── -->
+  <section>
+    <div class="ds-section-title">11 모듈 화면 레이아웃</div>
+    <div class="ds-section-sub">Header – Working Tabs – Body (2-column) 구조 — 헤더 최상단 고정</div>
+    <hr class="ds-divider" />
+
+    <div class="module-header-demo">
+      <div class="module-header">
+        <div class="module-header-left">
+          <div class="module-icon-placeholder">🔧</div>
+          <span class="module-title">RFP 요구사항 상세화 도구</span>
+        </div>
+        <div class="module-header-right">
+          <button class="btn btn-icon" title="테마 변경">◐</button>
+          <button class="btn btn-secondary btn-sm">↑ 불러오기</button>
+          <button class="btn btn-secondary btn-sm">↓ 내보내기</button>
+        </div>
+      </div>
+      <div class="module-tabs">
+        <button class="tab active">요구사항 목록</button>
+        <button class="tab">상세화</button>
+        <button class="tab">품질 평가</button>
+      </div>
+      <div class="module-body" id="module-body">
+        <div class="module-col" id="col-a">
+          <div class="module-col-label">Column A — 입력 / 목록</div>
+          <div style="font-size:12px;color:var(--text-sec);">주요 입력 영역, 요구사항 목록, 편집 패널 등</div>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+            <div style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:12px;display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-success">완료</span> REQ-001 — 로그인 기능
+            </div>
+            <div style="padding:8px;border:1px solid var(--brand-500);border-radius:var(--radius-md);font-size:12px;background:var(--brand-50);display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-brand">진행중</span> REQ-002 — 다국어 지원 ← 선택됨
+            </div>
+            <div style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:12px;display:flex;align-items:center;gap:8px;">
+              <span class="badge badge-neutral">미시작</span> REQ-003 — 내보내기 기능
+            </div>
+          </div>
+        </div>
+        <div class="col-resizer" id="col-resizer" title="드래그하여 컬럼 너비 조절"></div>
+        <div class="module-col" id="col-b">
+          <div class="module-col-label">Column B — 분석 결과 / 미리보기</div>
+          <div style="font-size:12px;color:var(--text-sec);">AI 분석 결과, 상세 보기, 설정 등<br>(필요 시에만 2-column 구성)<br><br>← 세로 바를 드래그하여 컬럼 너비를 조절하세요</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Live Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+  // ── Theme Toggle ──────────────────────────
+  const html = document.documentElement;
+  const btn  = document.getElementById('theme-toggle');
+
+  function setTheme(dark) {
+    html.setAttribute('data-theme', dark ? 'dark' : 'light');
+    btn.textContent = dark ? '☀' : '☽';
+    localStorage.setItem('rets-ds-theme', dark ? 'dark' : 'light');
+  }
+
+  btn.addEventListener('click', () => {
+    setTheme(html.getAttribute('data-theme') !== 'dark');
+  });
+
+  // Init theme
+  const saved = localStorage.getItem('rets-ds-theme');
+  if (saved === 'dark') setTheme(true);
+
+  // ── Tab interaction ────────────────────────
+  document.querySelectorAll('.tabs').forEach(tabGroup => {
+    tabGroup.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabGroup.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+  });
+
+  // ── Toast close (static) ──────────────────
+  document.querySelectorAll('.toast-close').forEach(c => {
+    c.addEventListener('click', () => c.closest('.toast').remove());
+  });
+
+  // ── Live Toast ────────────────────────────
+  const container = document.getElementById('toast-container');
+  const ICONS = { success:'✅', error:'⛔', warning:'⚠️', info:'ℹ️' };
+  const CLASSES = { success:'toast-success', error:'toast-error', warning:'toast-warning', info:'toast-info' };
+  const MAX_TOASTS = 4;
+
+  function showToast(type, title, msg, hasBtn = false) {
+    // Dedupe
+    const existing = [...container.children].find(t => t.dataset.title === title);
+    if (existing) return;
+
+    // Limit
+    while (container.children.length >= MAX_TOASTS) {
+      removeToast(container.firstChild);
+    }
+
+    const el = document.createElement('div');
+    el.className = `toast ${CLASSES[type]}`;
+    el.dataset.title = title;
+    el.innerHTML = `
+      <span class="toast-icon">${ICONS[type]}</span>
+      <div class="toast-body">
+        <div class="toast-title">${title}</div>
+        <div class="toast-msg">${msg}</div>
+        ${hasBtn ? `<div class="toast-actions"><button class="btn btn-danger btn-sm" onclick="removeToast(this.closest('.toast'))">다시 시도</button><button class="btn btn-ghost btn-sm" onclick="removeToast(this.closest('.toast'))">닫기</button></div>` : ''}
+      </div>
+      ${!hasBtn ? `<button class="toast-close" onclick="removeToast(this.closest('.toast'))">×</button>` : ''}
+    `;
+    container.appendChild(el);
+
+    if (!hasBtn) {
+      setTimeout(() => removeToast(el), 4000);
+    }
+  }
+
+  function removeToast(el) {
+    if (!el || !el.parentNode) return;
+    el.classList.add('removing');
+    setTimeout(() => el.remove(), 200);
+  }
+
+  // ── Hex Copy ──────────────────────────────
+  function copyHex(el, hex) {
+    const code = hex || el.textContent.trim();
+    navigator.clipboard.writeText(code).then(() => {
+      // 복사 성공 시 토스트 — 같은 색을 연속 복사할 수 있도록 title에 코드 포함
+      const existing = [...container.children].find(t => t.dataset.title === 'hex-copy');
+      if (existing) removeToast(existing);           // 이전 복사 토스트 즉시 교체
+      const t = document.createElement('div');
+      t.className = 'toast toast-success';
+      t.dataset.title = 'hex-copy';
+      t.innerHTML = `
+        <span class="toast-icon">📋</span>
+        <div class="toast-body">
+          <div class="toast-title" style="font-family:Consolas,'Courier New',monospace;letter-spacing:0;">${code}</div>
+          <div class="toast-msg">클립보드에 복사되었습니다</div>
+        </div>
+        <button class="toast-close" onclick="removeToast(this.closest('.toast'))">×</button>
+      `;
+      container.appendChild(t);
+      setTimeout(() => removeToast(t), 2500);
+    }).catch(() => {
+      showToast('error', '복사 실패', '클립보드 접근이 허용되지 않았습니다.');
+    });
+  }
+
+  // 모든 .hex, .sem-swatch-hex 요소에 클릭 핸들러 + title 자동 연결
+  document.querySelectorAll('.color-meta .hex, .sem-swatch-hex').forEach(el => {
+    const code = el.textContent.trim();
+    el.title = `${code} 복사`;
+    el.addEventListener('click', () => copyHex(el, code));
+  });
+
+  // ── Drawer ────────────────────────────────
+  function openDrawer() {
+    document.getElementById('demo-drawer').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('demo-drawer').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── Column Resizer ────────────────────────
+  (function () {
+    const resizer = document.getElementById('col-resizer');
+    const colA    = document.getElementById('col-a');
+    const body    = document.getElementById('module-body');
+    if (!resizer || !colA || !body) return;
+
+    let dragging = false;
+    let startX   = 0;
+    let startW   = 0;
+
+    resizer.addEventListener('mousedown', e => {
+      dragging = true;
+      startX   = e.clientX;
+      startW   = colA.getBoundingClientRect().width;
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const bodyW  = body.getBoundingClientRect().width;
+      const delta  = e.clientX - startX;
+      const newW   = Math.min(Math.max(startW + delta, 160), bodyW - 160 - 5);
+      colA.style.width = newW + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+
+    // Touch support
+    resizer.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startW = colA.getBoundingClientRect().width;
+      resizer.classList.add('dragging');
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', e => {
+      if (!resizer.classList.contains('dragging')) return;
+      const bodyW = body.getBoundingClientRect().width;
+      const delta = e.touches[0].clientX - startX;
+      const newW  = Math.min(Math.max(startW + delta, 160), bodyW - 160 - 5);
+      colA.style.width = newW + 'px';
+    });
+
+    document.addEventListener('touchend', () => {
+      resizer.classList.remove('dragging');
+    });
+  })();
+</script>
+</body>
+</html>
