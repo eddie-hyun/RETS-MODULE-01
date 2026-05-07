@@ -1,0 +1,995 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rets-module01-app-state-schema",
+  "title": "RETS-MODULE-01 Application State Schema",
+  "description": "RETS-MODULE-01 애플리케이션의 localStorage 저장 데이터 구조 정의 (AppState 전체 스키마). rets_02c_req_schema v3.0.0 완전 호환.",
+  "version": "1.0.0",
+
+  "definitions": {
+
+    "ChangeHistoryEntry": {
+      "$id": "#/definitions/ChangeHistoryEntry",
+      "description": "요구사항 변경 이력 항목 — rets_02c_req_schema v3.0.0 definitions.types.ChangeHistoryEntry 동일",
+      "type": "object",
+      "required": ["version", "date", "author", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+          "description": "변경 후 버전 (예: 1.1, 1.2.0)"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "변경일 (ISO 8601 date, 예: 2026-05-07)"
+        },
+        "author": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "변경 작성자"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "변경 내용 요약"
+        },
+        "changed_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 50,
+          "description": "변경된 필드명 목록 (선택)"
+        }
+      }
+    },
+
+    "IOSpec": {
+      "$id": "#/definitions/IOSpec",
+      "description": "DEV 요구사항 입출력 명세",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "maxItems": 20,
+          "description": "입력 항목 목록"
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "maxItems": 20,
+          "description": "출력 항목 목록"
+        }
+      }
+    },
+
+    "QualityIssue": {
+      "$id": "#/definitions/QualityIssue",
+      "description": "품질 진단 결과 내 개별 이슈 항목",
+      "type": "object",
+      "required": ["issue_id", "issue_type", "dimension", "severity", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "issue_id": {
+          "type": "string",
+          "pattern": "^QD-\\d{8}-\\d{4}-I\\d{2}$",
+          "description": "이슈 ID. 형식: {diagnosis_id}-I{2자리순번}"
+        },
+        "issue_type": {
+          "type": "string",
+          "enum": ["ambiguity", "inconsistency", "unverifiable", "missing", "duplicate", "conflict"],
+          "description": "이슈 유형"
+        },
+        "dimension": {
+          "type": "string",
+          "enum": ["clarity", "consistency", "verifiability"],
+          "description": "해당 품질 차원"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["Critical", "Major", "Minor", "Trivial"],
+          "description": "심각도"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "이슈 발생 위치 (필드명 또는 텍스트 위치)"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "이슈 상세 설명"
+        },
+        "suggestion": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "개선 제안"
+        },
+        "related_req_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(RFP|DEV_(FR|NFR))_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "maxItems": 10,
+          "description": "연관된 다른 req_id (중복/충돌 이슈용)"
+        }
+      }
+    },
+
+    "GradeDistribution": {
+      "$id": "#/definitions/GradeDistribution",
+      "description": "품질 등급 분포 집계",
+      "type": "object",
+      "required": ["A", "B", "C", "D"],
+      "additionalProperties": false,
+      "properties": {
+        "A": { "type": "integer", "minimum": 0 },
+        "B": { "type": "integer", "minimum": 0 },
+        "C": { "type": "integer", "minimum": 0 },
+        "D": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "IssueSummary": {
+      "$id": "#/definitions/IssueSummary",
+      "description": "이슈 유형별 건수 집계",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ambiguity":      { "type": "integer", "minimum": 0 },
+        "inconsistency":  { "type": "integer", "minimum": 0 },
+        "unverifiable":   { "type": "integer", "minimum": 0 },
+        "missing":        { "type": "integer", "minimum": 0 },
+        "duplicate":      { "type": "integer", "minimum": 0 },
+        "conflict":       { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "QualityWeights": {
+      "$id": "#/definitions/QualityWeights",
+      "description": "품질 점수 차원별 가중치. 세 값의 합이 반드시 1.0이어야 한다.",
+      "type": "object",
+      "required": ["clarity", "consistency", "verifiability"],
+      "additionalProperties": false,
+      "properties": {
+        "clarity": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.8,
+          "description": "명확성 가중치"
+        },
+        "consistency": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.8,
+          "description": "일관성 가중치"
+        },
+        "verifiability": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.8,
+          "description": "검증가능성 가중치"
+        }
+      }
+    }
+  },
+
+  "schemas": {
+
+    "RequirementItem": {
+      "$id": "#/schemas/RequirementItem",
+      "description": "요구사항 항목 — rets_02c_req_schema v3.0.0의 RFPRequirement 또는 DevRequirement + 앱 전용 확장 필드",
+      "type": "object",
+      "required": [
+        "req_type", "req_id", "req_version", "req_level",
+        "req_name", "functional_class", "req_category",
+        "description", "req_status", "created_by", "last_modified_date"
+      ],
+      "properties": {
+        "req_type": {
+          "type": "string",
+          "enum": ["RFP", "DEV"],
+          "description": "요구사항 유형 구분"
+        },
+        "req_id": {
+          "type": "string",
+          "pattern": "^(RFP|DEV_(FR|NFR))_\\d{3}(_\\d{2}){0,4}$",
+          "description": "요구사항 고유 ID — rets_02c_req_schema 패턴 준수 필수. 생성 후 불변"
+        },
+        "req_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+          "default": "1.0",
+          "description": "요구사항 버전 (Semantic Versioning 간소화)"
+        },
+        "req_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "계층 수준 (1~5) — req_id 언더스코어 깊이와 반드시 일치"
+        },
+        "req_name": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "요구사항명 — 동사형 명사구 또는 명사"
+        },
+        "functional_class": {
+          "type": "string",
+          "enum": ["기능", "비기능"],
+          "description": "기능/비기능 구분. DEV 타입은 req_id의 FR/NFR 프리픽스와 일치 필수"
+        },
+        "req_category": {
+          "type": "string",
+          "enum": ["기능", "인터페이스", "데이터", "배치", "성능", "보안", "가용성", "유지보수성", "운영", "제약사항", "기타"],
+          "description": "요구사항 유형"
+        },
+        "domain_area": {
+          "type": "string",
+          "enum": ["UI/UX", "인증/인가", "데이터관리", "통합/인터페이스", "AI/LLM", "성능", "보안", "운영", "인프라", "공통", "기타"],
+          "description": "도메인 영역 (참조·분류 용도)"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "요구사항 상세 설명"
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 500 },
+          "maxItems": 10,
+          "description": "완료 기준 목록 (Given-When-Then 형식 권장)"
+        },
+        "verification_method": {
+          "type": "string",
+          "enum": ["테스트", "검사", "분석", "시연", "검토"],
+          "description": "검증 방법"
+        },
+        "metrics": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 200 },
+          "maxItems": 5,
+          "description": "측정 지표 — 수치화된 기준"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["MUST", "SHOULD", "COULD", "WONT"],
+          "description": "MoSCoW 우선순위"
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["Critical", "High", "Medium", "Low"],
+          "description": "중요도"
+        },
+        "stakeholders": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 100 },
+          "maxItems": 10,
+          "description": "연관 이해관계자 역할명"
+        },
+        "created_by": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "발의자"
+        },
+        "last_modified_date": {
+          "type": "string",
+          "format": "date",
+          "description": "최종수정일 (ISO 8601 date)"
+        },
+        "req_status": {
+          "type": "string",
+          "enum": ["Draft", "InReview", "Approved", "Rejected", "Deferred", "Deprecated"],
+          "description": "요구사항 상태"
+        },
+        "manager": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "관리 담당자"
+        },
+        "reviewer": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "검토자"
+        },
+        "change_history": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ChangeHistoryEntry" },
+          "maxItems": 100,
+          "description": "변경 이력 배열"
+        },
+
+        "acceptance_status": {
+          "type": "string",
+          "enum": ["수용", "조건부수용", "불수용", "검토중", "해당없음"],
+          "description": "[RFP 전용] 수용여부"
+        },
+
+        "io_spec": {
+          "$ref": "#/definitions/IOSpec",
+          "description": "[DEV 전용] 입출력 명세"
+        },
+        "story_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "[DEV 전용] 스토리포인트"
+        },
+        "estimated_effort": {
+          "type": "number",
+          "minimum": 0,
+          "description": "[DEV 전용] 예상공수 (MD)"
+        },
+        "source_rfp_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^RFP_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "description": "[DEV 전용] 근거 RFP 요구사항 ID 목록"
+        },
+        "predecessor_dev_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^DEV_(FR|NFR)_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "description": "[DEV 전용] 선행 DEV 요구사항 ID 목록"
+        },
+        "dev_status": {
+          "type": "string",
+          "enum": ["Todo", "InProgress", "Done", "Blocked", "Skipped"],
+          "description": "[DEV 전용] 개발 진행 상태"
+        },
+        "developer": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "[DEV 전용] 개발 담당자"
+        },
+
+        "_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "[앱 전용] 내부 UUID. 내보내기 시 제외"
+        },
+        "_created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "[앱 전용] 레코드 최초 생성 타임스탬프. 내보내기 시 제외"
+        },
+        "_updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "[앱 전용] 레코드 최종 수정 타임스탬프. 내보내기 시 제외"
+        },
+        "_llm_generated": {
+          "type": "boolean",
+          "description": "[앱 전용] LLM 자동 생성 여부 (Human-in-the-Loop 표시). 내보내기 시 제외"
+        },
+        "_quality_score": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100,
+          "description": "[앱 전용] 마지막 품질 진단 종합 점수 캐시. 내보내기 시 제외"
+        }
+      }
+    },
+
+    "QualityDiagnosisResult": {
+      "$id": "#/schemas/QualityDiagnosisResult",
+      "description": "단일 RequirementItem에 대한 3차원 품질 진단 결과",
+      "type": "object",
+      "required": [
+        "diagnosis_id", "req_id", "diagnosed_at", "diagnosed_by",
+        "clarity_score", "consistency_score", "verifiability_score",
+        "overall_score", "quality_grade", "issues", "is_latest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "diagnosis_id": {
+          "type": "string",
+          "pattern": "^QD-\\d{8}-\\d{4}$",
+          "description": "진단 결과 고유 ID. 형식: QD-{YYYYMMDD}-{4자리순번}"
+        },
+        "req_id": {
+          "type": "string",
+          "pattern": "^(RFP|DEV_(FR|NFR))_\\d{3}(_\\d{2}){0,4}$",
+          "description": "진단 대상 RequirementItem의 req_id"
+        },
+        "diagnosed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "진단 수행 일시 (ISO 8601 datetime)"
+        },
+        "diagnosed_by": {
+          "type": "string",
+          "description": "진단 수행 주체 — 'LLM' 또는 사용자명"
+        },
+        "llm_session_id": {
+          "type": "string",
+          "description": "진단에 사용된 LLM 세션 ID"
+        },
+        "clarity_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "명확성 점수 (0.0~1.0, 소수점 2자리)"
+        },
+        "consistency_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "일관성 점수 (0.0~1.0)"
+        },
+        "verifiability_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "검증가능성 점수 (0.0~1.0)"
+        },
+        "overall_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "종합 점수 = (clarity×0.4 + consistency×0.3 + verifiability×0.3) × 100"
+        },
+        "quality_grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D"],
+          "description": "품질 등급 — A(≥90) / B(≥75) / C(≥60) / D(<60)"
+        },
+        "issues": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/QualityIssue" },
+          "maxItems": 20,
+          "description": "발견된 품질 이슈 목록"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "maxItems": 5,
+          "description": "LLM이 제안하는 개선 방향"
+        },
+        "raw_llm_response": {
+          "type": "string",
+          "description": "LLM 원본 응답 텍스트 (디버깅 목적)"
+        },
+        "is_latest": {
+          "type": "boolean",
+          "description": "해당 req_id에 대한 최신 진단 여부. 동일 req_id에 대해 하나만 true"
+        }
+      }
+    },
+
+    "TraceabilityLink": {
+      "$id": "#/schemas/TraceabilityLink",
+      "description": "RequirementItem 간 또는 외부 산출물과의 추적 관계",
+      "type": "object",
+      "required": [
+        "link_id", "link_type", "source_id", "source_type",
+        "target_id", "target_type", "created_by", "created_at", "is_approved"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "link_id": {
+          "type": "string",
+          "pattern": "^TL-\\d{8}-\\d{4}$",
+          "description": "추적 링크 고유 ID. 형식: TL-{YYYYMMDD}-{4자리순번}"
+        },
+        "link_type": {
+          "type": "string",
+          "enum": ["rfp_to_dev", "dev_to_test", "dev_to_screen", "dev_to_api", "dev_to_data", "rfp_conflict", "dev_duplicate", "hierarchy"],
+          "description": "연결 유형"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "출발점 ID (req_id, TC-XXX, SCR-XX 등)"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["rfp_req", "dev_req", "test_case", "screen", "api", "data_object"],
+          "description": "출발점 타입"
+        },
+        "target_id": {
+          "type": "string",
+          "description": "도착점 ID"
+        },
+        "target_type": {
+          "type": "string",
+          "enum": ["rfp_req", "dev_req", "test_case", "screen", "api", "data_object"],
+          "description": "도착점 타입"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": ["derives", "refines", "tests", "implements", "conflicts", "duplicates"],
+          "description": "관계 성격"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "LLM 자동 생성 링크의 신뢰도 (0.0~1.0)"
+        },
+        "created_by": {
+          "type": "string",
+          "description": "생성 주체 ('LLM' 또는 사용자명)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "생성 일시 (ISO 8601 datetime)"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "링크 부가 설명"
+        },
+        "is_approved": {
+          "type": "boolean",
+          "description": "사용자 승인 여부 (Human-in-the-Loop)"
+        }
+      }
+    },
+
+    "LLMMessage": {
+      "$id": "#/schemas/LLMMessage",
+      "description": "LLM 세션 내 개별 요청/응답 메시지",
+      "type": "object",
+      "required": ["message_id", "role", "content", "timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "message_id": {
+          "type": "string",
+          "pattern": "^.+-M\\d{3}$",
+          "description": "메시지 ID. 형식: {session_id}-M{3자리순번}"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant", "system"],
+          "description": "메시지 발신 주체"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 10000,
+          "description": "메시지 본문"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "메시지 전송/수신 일시"
+        },
+        "parsed_json": {
+          "description": "응답 텍스트에서 파싱된 JSON 구조체 (성공 시)"
+        },
+        "parse_success": {
+          "type": "boolean",
+          "description": "JSON 파싱 성공 여부"
+        },
+        "latency_ms": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "응답 수신까지 소요 시간 (밀리초)"
+        }
+      }
+    },
+
+    "LLMSession": {
+      "$id": "#/schemas/LLMSession",
+      "description": "Gemini 릴레이 서버와의 대화 세션",
+      "type": "object",
+      "required": ["session_id", "purpose", "status", "created_at", "team_id", "messages"],
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "릴레이 서버로부터 받은 세션 ID. 생성 후 불변"
+        },
+        "purpose": {
+          "type": "string",
+          "enum": ["detailing", "quality_diagnosis", "conflict_check", "general"],
+          "description": "세션 사용 목적"
+        },
+        "target_req_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(RFP|DEV_(FR|NFR))_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "description": "처리 대상 RequirementItem의 req_id 목록"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["initializing", "active", "completed", "failed", "expired"],
+          "description": "세션 상태"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "세션 시작 일시"
+        },
+        "completed_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "세션 완료 일시"
+        },
+        "team_id": {
+          "type": "string",
+          "description": "릴레이 서버 인증용 팀 ID"
+        },
+        "messages": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/LLMMessage" },
+          "description": "대화 메시지 목록"
+        },
+        "total_tokens_used": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "세션 누적 토큰 사용량"
+        },
+        "error_code": {
+          "type": ["string", "null"],
+          "description": "실패 시 오류 코드"
+        },
+        "error_message": {
+          "type": ["string", "null"],
+          "maxLength": 500,
+          "description": "실패 시 오류 메시지"
+        },
+        "result_req_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^DEV_(FR|NFR)_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "description": "세션 결과로 생성된 DEV RequirementItem의 req_id 목록"
+        }
+      }
+    },
+
+    "UserSettings": {
+      "$id": "#/schemas/UserSettings",
+      "description": "사용자 애플리케이션 환경설정 (싱글톤)",
+      "type": "object",
+      "required": ["team_id", "relay_server_url"],
+      "additionalProperties": false,
+      "properties": {
+        "team_id": {
+          "type": "string",
+          "description": "LLM 릴레이 서버 인증용 팀 ID"
+        },
+        "relay_server_url": {
+          "type": "string",
+          "format": "uri",
+          "default": "https://ai-relay.mooo.com:11443",
+          "description": "릴레이 서버 URL"
+        },
+        "default_req_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$",
+          "default": "1.0",
+          "description": "신규 요구사항 생성 시 기본 버전"
+        },
+        "default_created_by": {
+          "type": "string",
+          "maxLength": 100,
+          "default": "",
+          "description": "신규 요구사항의 기본 발의자명"
+        },
+        "auto_save_interval_sec": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300,
+          "default": 30,
+          "description": "자동 저장 주기 (초). 0 = 비활성화"
+        },
+        "llm_timeout_sec": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 120,
+          "default": 30,
+          "description": "LLM 요청 타임아웃 (초)"
+        },
+        "quality_weights": {
+          "$ref": "#/definitions/QualityWeights",
+          "description": "품질 점수 차원별 가중치. 합계 반드시 1.0"
+        },
+        "export_format": {
+          "type": "string",
+          "enum": ["json", "csv", "markdown"],
+          "default": "json",
+          "description": "기본 내보내기 포맷"
+        },
+        "ui_theme": {
+          "type": "string",
+          "enum": ["light", "dark", "system"],
+          "default": "light",
+          "description": "UI 테마"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["ko", "en"],
+          "default": "ko",
+          "description": "인터페이스 언어"
+        },
+        "show_llm_raw_response": {
+          "type": "boolean",
+          "default": false,
+          "description": "LLM 원본 응답 노출 여부 (개발자 모드)"
+        },
+        "max_requirements_per_batch": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "LLM 일괄 처리 시 배치 크기"
+        }
+      }
+    },
+
+    "QualityReport": {
+      "$id": "#/schemas/QualityReport",
+      "description": "전체 또는 선택된 요구사항 집합에 대한 집계 품질 보고서",
+      "type": "object",
+      "required": [
+        "report_id", "title", "generated_at", "generated_by",
+        "scope", "total_count", "avg_overall_score",
+        "avg_clarity", "avg_consistency", "avg_verifiability",
+        "grade_distribution", "issue_summary", "export_format", "diagnosis_ids"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "report_id": {
+          "type": "string",
+          "pattern": "^RPT-\\d{8}-\\d{4}$",
+          "description": "보고서 ID. 형식: RPT-{YYYYMMDD}-{4자리순번}"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "보고서 제목"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "생성 일시"
+        },
+        "generated_by": {
+          "type": "string",
+          "description": "생성 주체"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["all", "selected", "rfp_only", "dev_only"],
+          "description": "보고서 범위"
+        },
+        "target_req_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(RFP|DEV_(FR|NFR))_\\d{3}(_\\d{2}){0,4}$"
+          },
+          "description": "scope=selected 시 대상 req_id 목록"
+        },
+        "total_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "진단 대상 요구사항 총 건수"
+        },
+        "avg_overall_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "전체 평균 종합 점수 (0~100)"
+        },
+        "avg_clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "명확성 평균 (0~100)"
+        },
+        "avg_consistency": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "일관성 평균 (0~100)"
+        },
+        "avg_verifiability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "검증가능성 평균 (0~100)"
+        },
+        "grade_distribution": {
+          "$ref": "#/definitions/GradeDistribution",
+          "description": "등급 분포 집계"
+        },
+        "issue_summary": {
+          "$ref": "#/definitions/IssueSummary",
+          "description": "이슈 유형별 건수 집계"
+        },
+        "critical_issues": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/QualityIssue" },
+          "maxItems": 20,
+          "description": "severity=Critical인 이슈 목록"
+        },
+        "recommendations": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 300 },
+          "maxItems": 10,
+          "description": "전체 품질 개선 권고사항"
+        },
+        "export_format": {
+          "type": "string",
+          "enum": ["json", "markdown", "csv"],
+          "description": "내보내기 포맷"
+        },
+        "diagnosis_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^QD-\\d{8}-\\d{4}$"
+          },
+          "description": "집계에 사용된 QualityDiagnosisResult ID 목록"
+        }
+      }
+    },
+
+    "AppMeta": {
+      "$id": "#/schemas/AppMeta",
+      "description": "앱 메타 정보",
+      "type": "object",
+      "required": ["app_version", "schema_version", "created_at", "last_saved_at", "total_requirements", "total_rfp", "total_dev"],
+      "additionalProperties": false,
+      "properties": {
+        "app_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "앱 버전 (Semantic Versioning)"
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "데이터 스키마 버전 (마이그레이션 판단 기준)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "AppState 최초 생성 일시"
+        },
+        "last_saved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "마지막 저장 일시"
+        },
+        "total_requirements": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "전체 요구사항 건수 (카운트 캐시)"
+        },
+        "total_rfp": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "RFP 요구사항 건수"
+        },
+        "total_dev": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "DEV 요구사항 건수"
+        },
+        "checksum": {
+          "type": "string",
+          "description": "데이터 무결성 검증용 SHA-256 해시 (16진수 앞 16자, 선택)"
+        }
+      }
+    },
+
+    "AppState": {
+      "$id": "#/schemas/AppState",
+      "description": "RETS-MODULE-01 localStorage 저장 최상위 상태 객체. 키명: 'rets_m01_state'",
+      "type": "object",
+      "required": ["meta", "requirements", "qualityResults", "traceabilityLinks", "llmSessions", "qualityReports", "userSettings"],
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/schemas/AppMeta",
+          "description": "앱 메타 정보"
+        },
+        "requirements": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/RequirementItem" },
+          "description": "전체 요구사항 목록 (RFP + DEV 통합)"
+        },
+        "qualityResults": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/QualityDiagnosisResult" },
+          "description": "전체 품질 진단 결과 목록"
+        },
+        "traceabilityLinks": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/TraceabilityLink" },
+          "description": "전체 추적성 연결 목록"
+        },
+        "llmSessions": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/LLMSession" },
+          "description": "LLM 세션 이력 목록"
+        },
+        "qualityReports": {
+          "type": "array",
+          "items": { "$ref": "#/schemas/QualityReport" },
+          "description": "생성된 품질 보고서 목록"
+        },
+        "userSettings": {
+          "$ref": "#/schemas/UserSettings",
+          "description": "사용자 환경설정 (싱글톤)"
+        }
+      }
+    }
+  },
+
+  "root": { "$ref": "#/schemas/AppState" },
+
+  "localStorage_keys": {
+    "rets_m01_state": {
+      "schema": "#/schemas/AppState",
+      "description": "앱 전체 상태 (메인 영속성 키)"
+    },
+    "rets_m01_schema_version": {
+      "type": "string",
+      "description": "저장된 스키마 버전 (마이그레이션 판단용)"
+    },
+    "rets_m01_last_session": {
+      "type": "string",
+      "description": "마지막 활성 LLM 세션 ID"
+    },
+    "rets_m01_draft_backup": {
+      "schema": "#/schemas/AppState",
+      "description": "편집 중 임시 자동 저장 (30초 주기)"
+    }
+  },
+
+  "business_rules": [
+    {
+      "id": "BR-001",
+      "name": "불변 ID",
+      "description": "req_id, diagnosis_id, link_id, session_id, report_id 는 생성 후 수정 불가"
+    },
+    {
+      "id": "BR-002",
+      "name": "변경 이력 자동 추가",
+      "description": "RequirementItem 수정 시 change_history에 항목 자동 추가"
+    },
+    {
+      "id": "BR-003",
+      "name": "버전 자동 증가",
+      "description": "RequirementItem 수정 시 req_version의 minor 버전 자동 +0.1 증가"
+    },
+    {
+      "id": "BR-004",
+      "name": "최신 진단 표시",
+      "description": "동일 req_id에 대해 가장 최근 QualityDiagnosisResult만 is_latest=true"
+    },
+    {
+      "id": "BR-005",
+      "name": "LLM 승인 표시",
+      "description": "_llm_generated=true 항목은 사용자 Accept 전까지 req_status='Draft' 유지"
+    },
+    {
+      "id": "BR-006",
+      "name": "세션 만료 정책",
+      "description": "created_at 기준 30분 경과 시 status='expired' 자동 처리"
+    },
+    {
+      "id": "BR-007",
+      "name": "내보내기 정제",
+      "description": "내보내기 JSON에서 앱 전용 필드(_id, _created_at, _updated_at, _llm_generated, _quality_score) 반드시 제거"
+    },
+    {
+      "id": "BR-008",
+      "name": "가중치 합계",
+      "description": "quality_weights.clarity + consistency + verifiability = 1.0 (±0.001 허용)"
+    }
+  ]
+}
