@@ -244,7 +244,7 @@ async function sendMessage(prompt) {
   const res = await fetch(`${RELAY_BASE_URL}/chat/${sessionId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+    body: JSON.stringify({ // <- 중요! API 명세에 따른 데이터 형식을 정확하게 지켜야 함.
       team_id: TEAM_ID,
       message: prompt,
     }),
@@ -347,7 +347,7 @@ for (const item of items) {
 
 ## 6. 체크리스트
 
-- [ ] `team_id`를 확인하고 코드 상수로 정의했는가?
+- [ ] `team_id`를 사용자로부터 입력받고(HTML `input` 등) 코드 전역에서 사용할 수 있는 요소로 정의하고 있는가?
 - [ ] 릴레이 서버의 API 호출규약을 정확하게 지켜서 HTTP 리퀘스트를 만들고 있는가?
 - [ ] 각 LLM 호출의 user prompt 끝에 호출 용도에 적합한 JSON 출력 지시와 응답 스키마를 포함했는가?
 - [ ] LLM 호출에 대해 요구했던 응답을 적절하게 파싱하고 있는가?
