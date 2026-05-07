@@ -240,13 +240,13 @@ initSession().catch(console.error);
 
 ```js
 // LLM에 메시지를 전송하고 응답 텍스트를 반환합니다.
-async function sendMessage(message) {
+async function sendMessage(prompt) {
   const res = await fetch(`${RELAY_BASE_URL}/chat/${sessionId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       team_id: TEAM_ID,
-      message: message,
+      message: prompt,
     }),
   });
 
@@ -348,6 +348,7 @@ for (const item of items) {
 ## 6. 체크리스트
 
 - [ ] `team_id`를 확인하고 코드 상수로 정의했는가?
+- [ ] 릴레이 서버의 API 호출규약을 정확하게 지켜서 HTTP 리퀘스트를 만들고 있는가?
 - [ ] 각 LLM 호출의 user prompt 끝에 호출 용도에 적합한 JSON 출력 지시와 응답 스키마를 포함했는가?
 - [ ] LLM 호출에 대해 요구했던 응답을 적절하게 파싱하고 있는가?
 - [ ] 세션 생성(`POST /chat/new`)은 페이지 로드 시 **1회만** 호출하는가?
